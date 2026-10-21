@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>회의실 예약 현황판</title>
+<style>
+  :root{
+    --navy-900:#0b2b4c;
+    --navy-800:#123a63;
+    --navy-700:#1b4a7a;
+    --navy-600:#2563a0;
+    --navy-100:#e8f1f8;
+    --navy-50:#f4f8fb;
+    --gray-100:#f1f3f5;
+    --gray-200:#dfe3e8;
+    --gray-400:#9aa5b1;
+    --gray-700:#3c4552;
+    --amber-50:#fff8e6;
+    --amber-500:#c77700;
+    --red-600:#b3261e;
+    --red-50:#fdecea;
+    --radius:3px;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--navy-50);
+    color:var(--gray-700);
+    font-family:"Malgun Gothic","맑은 고딕","Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+    font-size:14px;
+    line-height:1.5;
+    overflow-x:hidden;
+  }
+
+  /* ---------- header ---------- */
+  .gov-header{
+    background:var(--navy-900);
+    border-bottom:3px solid var(--navy-600);
+    color:#fff;
+  }
+  .header-inner{
+    max-width:1100px;
+    margin:0 auto;
+    padding:20px 24px 16px;
+  }
+  .header-inner h1{
+    margin:0;
+    font-size:21px;
+    font-weight:700;
+    letter-spacing:0.2px;
+  }
+  .header-sub{
+    margin:4px 0 0;
+    font-size:12.5px;
+    color:#c7d6e8;
+  }
+
+  .container{
+    max-width:1100px;
+    margin:0 auto;
+    padding:22px 24px 60px;
+  }
+
+  /* ---------- buttons ---------- */
+  .btn{
+    font-family:inherit;
+    font-size:13px;
+    padding:8px 14px;
+    border-radius:var(--radius);
+    border:1px solid var(--navy-600);
+    background:#fff;
+    color:var(--navy-700);
+    cursor:pointer;
+  }
+  .btn:hover{ background:var(--navy-100); }
+  .btn:focus-visible{ outline:2px solid var(--navy-600); outline-offset:1px; }
+  .btn-outline{ background:#fff; }
+  .btn-primary{
+    background:var(--navy-600);
+    border-color:var(--navy-600);
+    color:#fff;
+    font-weight:600;
+  }
+  .btn-primary:hover{ background:var(--navy-700); }
+  .btn-danger{
+    background:#fff;
+    border-color:var(--red-600);
+    color:var(--red-600);
+  }
+  .btn-danger:hover{ background:var(--red-50); }
+
+  /* ---------- week nav ---------- */
+  .week-nav{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:14px;
+    margin-bottom:18px;
+    flex-wrap:wrap;
+  }
+  .week-range{
+    font-size:15px;
+    font-weight:700;
+    color:var(--navy-900);
+    min-width:230px;
+    text-align:center;
+  }
+
+  /* ---------- room tabs ---------- */
+  .room-tabs{
+    display:flex;
+    gap:4px;
+    border-bottom:2px solid var(--gray-200);
+    margin-bottom:14px;
+    overflow-x:auto;
+  }
+  .room-tab{
+    font-family:inherit;
+    font-size:14.5px;
+    padding:11px 22px;
+    background:transparent;
+    border:none;
+    border-bottom:3px solid transparent;
+    color:var(--gray-400);
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .room-tab:hover{ color:var(--navy-700); }
+  .room-tab.active{
+    color:var(--navy-900);
+    font-weight:700;
+    border-bottom-color:var(--navy-600);
+  }
+  .room-tab:focus-visible{ outline:2px solid var(--navy-600); outline-offset:-2px; }
+
+  /* ---------- legend ---------- */
+  .legend{
+    display:flex;
+    gap:18px;
+    flex-wrap:wrap;
+    align-items:center;
+    margin-bottom:12px;
+    font-size:12.5px;
+    color:var(--gray-700);
+  }
+  .legend-item{ display:inline-flex; align-items:center; gap:6px; }
+  .swatch{
+    width:13px; height:13px;
+    border-radius:2px;
+    display:inline-block;
+    border:1px solid var(--gray-200);
+  }
+  .swatch.available{ background:#fff; }
+  .swatch.reserved{ background:var(--navy-600); border-color:var(--navy-600); }
+  .swatch.upcoming{ background:var(--navy-600); border-color:var(--navy-600); box-shadow:inset 0 0 0 2px var(--amber-500); }
+  .swatch.past{ background:var(--gray-100); }
+
+  /* ---------- table ---------- */
+  .table-scroll{
+    overflow-x:auto;
+    background:#fff;
+    border:1px solid var(--gray-200);
+    border-radius:4px;
+  }
+  .schedule-table{
+    border-collapse:collapse;
+    width:100%;
+    min-width:620px;
+  }
+  .schedule-table th,
+  .schedule-table td{
+    border:1px solid var(--gray-200);
+    padding:0;
+    text-align:center;
+  }
+  .schedule-table thead th{
+    background:var(--navy-50);
+    color:var(--navy-900);
+    font-size:13px;
+    font-weight:700;
+    padding:10px 6px;
+    position:sticky;
+    top:0;
+  }
+  .schedule-table thead th.today-col{
+    background:var(--amber-50);
+    box-shadow:inset 0 -3px 0 var(--amber-500);
+  }
+  .day-head-dow{ display:block; }
+  .day-head-date{ display:block; font-size:11.5px; color:var(--gray-400); font-weight:400; margin-top:2px; }
+  .today-col .day-head-date{ color:var(--amber-500); font-weight:700; }
+
+  .time-col{
+    background:var(--navy-50);
+    color:var(--navy-900);
+    font-weight:700;
+    font-size:12.5px;
+    white-space:nowrap;
+    padding:0 10px;
+    position:sticky;
+    left:0;
+    z-index:1;
+  }
+
+  .slot-cell{
+    width:1px; /* let other columns size naturally */
+    height:52px;
+    vertical-align:middle;
+    cursor:pointer;
+    padding:4px 6px;
+  }
+  .slot-cell.available{
+    background:#fff;
+    color:var(--gray-400);
+    font-size:12px;
+  }
+  .slot-cell.available:hover{ background:var(--navy-100); color:var(--navy-700); }
+  .slot-cell.reserved{
+    background:var(--navy-600);
+    color:#fff;
+  }
+  .slot-cell.reserved:hover{ background:var(--navy-700); }
+  .slot-cell.reserved.upcoming{
+    box-shadow:inset 0 0 0 2px var(--amber-500);
+  }
+  .upcoming-badge{
+    display:inline-block;
+    background:var(--amber-500);
+    color:#fff;
+    font-size:10px;
+    font-weight:700;
+    letter-spacing:0.2px;
+    padding:1px 5px;
+    border-radius:2px;
+    margin-bottom:3px;
+  }
+  .slot-cell.past{
+    background:var(--gray-100);
+    color:var(--gray-400);
+    cursor:not-allowed;
+  }
+  .slot-title{ display:block; font-size:12.5px; font-weight:700; line-height:1.3; }
+  .slot-name{ display:block; font-size:11px; color:#dbe8f7; margin-top:2px; }
+  .slot-cell:focus-visible{ outline:2px solid var(--navy-900); outline-offset:-2px; }
+
+  /* ---------- modal ---------- */
+  .modal-overlay{
+    position:fixed; inset:0;
+    background:rgba(11,43,76,0.45);
+    display:flex; align-items:center; justify-content:center;
+    padding:16px;
+    z-index:50;
+  }
+  .modal-overlay.hidden{ display:none; }
+  .modal{
+    background:#fff;
+    border-radius:4px;
+    border-top:4px solid var(--navy-600);
+    width:100%;
+    max-width:380px;
+    padding:22px 22px 18px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.2);
+  }
+  .modal h2{
+    margin:0 0 4px;
+    font-size:16px;
+    color:var(--navy-900);
+  }
+  .modal-meta{
+    margin:0 0 16px;
+    font-size:12.5px;
+    color:var(--gray-400);
+  }
+  .field{ margin-bottom:12px; }
+  .field label{
+    display:block;
+    font-size:12.5px;
+    font-weight:700;
+    color:var(--gray-700);
+    margin-bottom:5px;
+  }
+  .field input{
+    width:100%;
+    font-family:inherit;
+    font-size:13.5px;
+    padding:8px 10px;
+    border:1px solid var(--gray-200);
+    border-radius:var(--radius);
+  }
+  .field input:focus-visible{ outline:2px solid var(--navy-600); border-color:var(--navy-600); }
+  .form-error{
+    color:var(--red-600);
+    font-size:12px;
+    margin:0 0 10px;
+    background:var(--red-50);
+    padding:7px 10px;
+    border-radius:var(--radius);
+  }
+  .hidden{ display:none !important; }
+  .modal-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+    margin-top:14px;
+  }
+  .detail-list{
+    margin:0 0 6px;
+    display:grid;
+    grid-template-columns:78px 1fr;
+    row-gap:8px;
+    font-size:13px;
+  }
+  .detail-list dt{ color:var(--gray-400); }
+  .detail-list dd{ margin:0; color:var(--gray-700); font-weight:600; }
+  .cancel-confirm-text{
+    font-size:13px;
+    color:var(--red-600);
+    background:var(--red-50);
+    padding:9px 10px;
+    border-radius:var(--radius);
+    margin:10px 0 0;
+  }
+
+  /* ---------- toast ---------- */
+  .toast{
+    position:fixed;
+    bottom:24px; left:50%;
+    transform:translateX(-50%);
+    background:var(--navy-900);
+    color:#fff;
+    padding:11px 20px;
+    border-radius:4px;
+    font-size:13px;
+    box-shadow:0 6px 18px rgba(0,0,0,0.25);
+    z-index:60;
+  }
+  .toast.hidden{ display:none; }
+
+  @media (max-width:560px){
+    .header-inner{ padding:16px 16px 14px; }
+    .container{ padding:16px 16px 48px; }
+    .week-nav{ gap:8px; }
+    .week-range{ font-size:13.5px; min-width:0; }
+  }
+</style>
+</head>
+<body>
+
+  <header class="gov-header">
+    <div class="header-inner">
+      <h1>회의실 예약 현황판</h1>
+      <p class="header-sub">부서 공용 회의실 예약 관리 시스템</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <nav class="week-nav">
+      <button id="prevWeekBtn" class="btn btn-outline" aria-label="이전 주">◀ 이전 주</button>
+      <div class="week-range" id="weekRangeLabel"></div>
+      <button id="todayBtn" class="btn btn-outline">오늘</button>
+      <button id="nextWeekBtn" class="btn btn-outline" aria-label="다음 주">다음 주 ▶</button>
+    </nav>
+
+    <div class="room-tabs" id="roomTabs" role="tablist"></div>
+
+    <div class="legend">
+      <span class="legend-item"><span class="swatch available"></span>예약 가능</span>
+      <span class="legend-item"><span class="swatch reserved"></span>예약됨</span>
+      <span class="legend-item"><span class="swatch upcoming"></span>곧 사용 예정 (시작 30분 전)</span>
+      <span class="legend-item"><span class="swatch past"></span>지난 시간</span>
+    </div>
+
+    <div class="table-scroll">
+      <table class="schedule-table" id="scheduleTable">
+        <thead>
+          <tr id="tableHeadRow"></tr>
+        </thead>
+        <tbody id="scheduleBody"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <div id="modalOverlay" class="modal-overlay hidden">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <h2 id="modalTitle">회의실 예약</h2>
+      <p id="modalMeta" class="modal-meta"></p>
+
+      <form id="reserveForm">
+        <div class="field">
+          <label for="nameInput">예약자 이름</label>
+          <input id="nameInput" type="text" maxlength="20" placeholder="예: 김민수" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="purposeInput">사용 목적</label>
+          <input id="purposeInput" type="text" maxlength="40" placeholder="예: 주간 정례회의" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="contactInput">연락처</label>
+          <input id="contactInput" type="tel" maxlength="20" placeholder="예: 010-1234-5678" autocomplete="off">
+        </div>
+        <p id="formError" class="form-error hidden"></p>
+        <div class="modal-actions">
+          <button type="button" id="closeModalBtn" class="btn btn-outline">취소</button>
+          <button type="submit" class="btn btn-primary">예약하기</button>
+        </div>
+      </form>
+
+      <div id="detailView" class="hidden">
+        <dl class="detail-list">
+          <dt>예약자</dt><dd id="detailName"></dd>
+          <dt>사용 목적</dt><dd id="detailPurpose"></dd>
+          <dt>연락처</dt><dd id="detailContact"></dd>
+          <dt>등록 시각</dt><dd id="detailCreatedAt"></dd>
+        </dl>
+        <p id="cancelConfirmText" class="cancel-confirm-text hidden">정말로 이 예약을 취소하시겠습니까?</p>
+        <div class="modal-actions">
+          <button type="button" id="closeDetailBtn" class="btn btn-outline">닫기</button>
+          <button type="button" id="requestCancelBtn" class="btn btn-danger">예약 취소</button>
+          <button type="button" id="confirmCancelBtn" class="btn btn-danger hidden">예, 취소합니다</button>
+          <button type="button" id="abortCancelBtn" class="btn btn-outline hidden">아니요</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var STORAGE_KEY = "roomBookings_v3";
+
+  var ROOMS = [
+    { id: "main",   name: "대회의실"   },
+    { id: "small1", name: "소회의실1" },
+    { id: "small2", name: "소회의실2" }
+  ];
+
+  var SLOTS = ["09","10","11","12","13","14","15","16","17"];
+  var WEEKDAY_KO = ["일","월","화","수","목","금","토"];
+
+  var state = {
+    currentMonday: getMonday(new Date()),
+    selectedRoom: ROOMS[0].id,
+    pendingKey: null
+  };
+
+  var bookings = loadBookings();
+
+  /* ---------- date helpers (always local y/m/d, never toISOString) ---------- */
+  function pad2(n){ return String(n).padStart(2,"0"); }
+
+  function toDateKey(d){
+    return d.getFullYear() + "-" + pad2(d.getMonth()+1) + "-" + pad2(d.getDate());
+  }
+
+  function addDays(d, n){
+    var copy = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    copy.setDate(copy.getDate() + n);
+    return copy;
+  }
+
+  function getMonday(d){
+    var day = d.getDay(); // 0=일 ... 6=토
+    var diff = day === 0 ? -6 : 1 - day;
+    return addDays(d, diff);
+  }
+
+  function getWeekDates(){
+    var out = [];
+    for (var i = 0; i < 5; i++) out.push(addDays(state.currentMonday, i));
+    return out;
+  }
+
+  /* ---------- storage ---------- */
+  function loadBookings(){
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return {};
+      var parsed = JSON.parse(raw);
+      return (parsed && typeof parsed.bookings === "object" && parsed.bookings) ? parsed.bookings : {};
+    } catch (e){
+      console.error("예약 데이터 로드 실패:", e);
+      return {};
+    }
+  }
+
+  function saveBookings(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 3, bookings: bookings }));
+  }
+
+  function keyOf(dateKey, roomId, hour){
+    return dateKey + "|" + roomId + "|" + hour;
+  }
+
+  window.addEventListener("storage", function(e){
+    if (e.key === STORAGE_KEY){
+      bookings = loadBookings();
+      render();
+    }
+  });
+
+  /* ---------- past-slot check ---------- */
+  function isPast(dateKey, hour){
+    var now = new Date();
+    var todayKey = toDateKey(now);
+    if (dateKey < todayKey) return true;
+    if (dateKey > todayKey) return false;
+    return (parseInt(hour,10) + 1) <= now.getHours();
+  }
+
+  /* ---------- "starting within 30 minutes" check ---------- */
+  function isUpcomingSoon(dateKey, hour){
+    var parts = dateKey.split("-").map(Number);
+    var start = new Date(parts[0], parts[1] - 1, parts[2], parseInt(hour,10), 0, 0, 0);
+    var diffMs = start.getTime() - new Date().getTime();
+    return diffMs > 0 && diffMs <= 30 * 60 * 1000;
+  }
+
+  /* ---------- room tabs ---------- */
+  function renderRoomTabs(){
+    var wrap = document.getElementById("roomTabs");
+    wrap.setAttribute("role","tablist");
+    wrap.innerHTML = "";
+    ROOMS.forEach(function(room){
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "room-tab" + (room.id === state.selectedRoom ? " active" : "");
+      btn.setAttribute("role","tab");
+      btn.setAttribute("aria-selected", room.id === state.selectedRoom ? "true" : "false");
+      btn.dataset.room = room.id;
+      btn.textContent = room.name;
+      btn.addEventListener("click", function(){
+        state.selectedRoom = room.id;
+        render();
+      });
+      wrap.appendChild(btn);
+    });
+  }
+
+  /* ---------- week label ---------- */
+  function renderWeekRangeLabel(weekDates){
+    var mon = weekDates[0], fri = weekDates[4];
+    var label = mon.getFullYear() + "년 " + (mon.getMonth()+1) + "월 " + mon.getDate() + "일(월) ~ " +
+                (fri.getMonth()+1) + "월 " + fri.getDate() + "일(금)";
+    document.getElementById("weekRangeLabel").textContent = label;
+  }
+
+  /* ---------- table ---------- */
+  function renderTableHead(weekDates){
+    var row = document.getElementById("tableHeadRow");
+    row.innerHTML = "";
+
+    var timeTh = document.createElement("th");
+    timeTh.className = "time-col";
+    timeTh.textContent = "시간";
+    row.appendChild(timeTh);
+
+    var todayKey = toDateKey(new Date());
+
+    weekDates.forEach(function(d){
+      var th = document.createElement("th");
+      var dateKey = toDateKey(d);
+      if (dateKey === todayKey) th.classList.add("today-col");
+
+      var dow = document.createElement("span");
+      dow.className = "day-head-dow";
+      dow.textContent = WEEKDAY_KO[d.getDay()];
+
+      var date = document.createElement("span");
+      date.className = "day-head-date";
+      date.textContent = (d.getMonth()+1) + "/" + d.getDate() + (dateKey === todayKey ? " (오늘)" : "");
+
+      th.appendChild(dow);
+      th.appendChild(date);
+      row.appendChild(th);
+    });
+  }
+
+  function renderTableBody(weekDates){
+    var body = document.getElementById("scheduleBody");
+    body.innerHTML = "";
+
+    SLOTS.forEach(function(hour){
+      var tr = document.createElement("tr");
+
+      var timeTh = document.createElement("th");
+      timeTh.scope = "row";
+      timeTh.className = "time-col";
+      timeTh.textContent = hour + ":00-" + pad2(parseInt(hour,10)+1) + ":00";
+      tr.appendChild(timeTh);
+
+      weekDates.forEach(function(d){
+        var dateKey = toDateKey(d);
+        var key = keyOf(dateKey, state.selectedRoom, hour);
+        var booking = bookings[key];
+        var td = document.createElement("td");
+        td.dataset.date = dateKey;
+        td.dataset.hour = hour;
+
+        if (booking){
+          var upcoming = isUpcomingSoon(dateKey, hour);
+          td.className = "slot-cell reserved" + (upcoming ? " upcoming" : "");
+          td.setAttribute("role","button");
+          td.setAttribute("tabindex","0");
+          td.setAttribute("aria-label", (upcoming ? "곧 사용 예정 - " : "") + booking.purpose + " - " + booking.name);
+
+          if (upcoming){
+            var badge = document.createElement("span");
+            badge.className = "upcoming-badge";
+            badge.textContent = "곧 사용 예정";
+            td.appendChild(badge);
+          }
+
+          var titleSpan = document.createElement("span");
+          titleSpan.className = "slot-title";
+          titleSpan.textContent = booking.purpose;
+          var nameSpan = document.createElement("span");
+          nameSpan.className = "slot-name";
+          nameSpan.textContent = booking.name;
+          td.appendChild(titleSpan);
+          td.appendChild(nameSpan);
+        } else if (isPast(dateKey, hour)){
+          td.className = "slot-cell past";
+          td.textContent = "지난 시간";
+        } else {
+          td.className = "slot-cell available";
+          td.setAttribute("role","button");
+          td.setAttribute("tabindex","0");
+          td.setAttribute("aria-label","예약 가능");
+          td.textContent = "예약 가능";
+        }
+
+        tr.appendChild(td);
+      });
+
+      body.appendChild(tr);
+    });
+  }
+
+  function render(){
+    var weekDates = getWeekDates();
+    renderRoomTabs();
+    renderWeekRangeLabel(weekDates);
+    renderTableHead(weekDates);
+    renderTableBody(weekDates);
+  }
+
+  /* ---------- slot click (delegated) ---------- */
+  function handleSlotActivate(td){
+    if (!td || td.classList.contains("past")) return;
+    var dateKey = td.dataset.date;
+    var hour = td.dataset.hour;
+    var key = keyOf(dateKey, state.selectedRoom, hour);
+    var roomName = ROOMS.filter(function(r){ return r.id === state.selectedRoom; })[0].name;
+    var label = roomName + " · " + formatDateLabel(dateKey) + " · " + hour + ":00-" + pad2(parseInt(hour,10)+1) + ":00";
+
+    if (bookings[key]){
+      openDetailModal(key, bookings[key], label);
+    } else {
+      openReserveModal(key, label);
+    }
+  }
+
+  document.getElementById("scheduleBody").addEventListener("click", function(e){
+    var td = e.target.closest(".slot-cell");
+    if (td) handleSlotActivate(td);
+  });
+  document.getElementById("scheduleBody").addEventListener("keydown", function(e){
+    if (e.key !== "Enter" && e.key !== " ") return;
+    var td = e.target.closest(".slot-cell");
+    if (td){ e.preventDefault(); handleSlotActivate(td); }
+  });
+
+  function formatDateLabel(dateKey){
+    var parts = dateKey.split("-").map(Number);
+    var d = new Date(parts[0], parts[1]-1, parts[2]);
+    return (parts[1]) + "월 " + parts[2] + "일(" + WEEKDAY_KO[d.getDay()] + ")";
+  }
+
+  /* ---------- week nav / today ---------- */
+  document.getElementById("prevWeekBtn").addEventListener("click", function(){
+    state.currentMonday = addDays(state.currentMonday, -7);
+    render();
+  });
+  document.getElementById("nextWeekBtn").addEventListener("click", function(){
+    state.currentMonday = addDays(state.currentMonday, 7);
+    render();
+  });
+  document.getElementById("todayBtn").addEventListener("click", function(){
+    state.currentMonday = getMonday(new Date());
+    render();
+  });
+
+  /* ---------- modal: reserve ---------- */
+  var overlay = document.getElementById("modalOverlay");
+  var modalTitle = document.getElementById("modalTitle");
+  var modalMeta = document.getElementById("modalMeta");
+  var reserveForm = document.getElementById("reserveForm");
+  var detailView = document.getElementById("detailView");
+  var formError = document.getElementById("formError");
+  var nameInput = document.getElementById("nameInput");
+  var purposeInput = document.getElementById("purposeInput");
+  var contactInput = document.getElementById("contactInput");
+
+  function openReserveModal(key, metaLabel){
+    state.pendingKey = key;
+    modalTitle.textContent = "회의실 예약";
+    modalMeta.textContent = metaLabel;
+    formError.classList.add("hidden");
+    formError.textContent = "";
+    nameInput.value = "";
+    purposeInput.value = "";
+    contactInput.value = "";
+    reserveForm.classList.remove("hidden");
+    detailView.classList.add("hidden");
+    overlay.classList.remove("hidden");
+    setTimeout(function(){ nameInput.focus(); }, 0);
+  }
+
+  function closeModal(){
+    overlay.classList.add("hidden");
+    state.pendingKey = null;
+    resetCancelConfirm();
+  }
+
+  document.getElementById("closeModalBtn").addEventListener("click", closeModal);
+  overlay.addEventListener("click", function(e){ if (e.target === overlay) closeModal(); });
+  document.addEventListener("keydown", function(e){
+    if (e.key === "Escape" && !overlay.classList.contains("hidden")) closeModal();
+  });
+
+  var CONTACT_PATTERN = /^[0-9\-+()\s]+$/;
+
+  reserveForm.addEventListener("submit", function(e){
+    e.preventDefault();
+    var name = nameInput.value.trim();
+    var purpose = purposeInput.value.trim();
+    var contact = contactInput.value.trim();
+
+    if (!name){ showFormError("예약자 이름을 입력해주세요."); return; }
+    if (!purpose){ showFormError("사용 목적을 입력해주세요."); return; }
+    if (!contact){ showFormError("연락처를 입력해주세요."); return; }
+    if (name.length > 20){ showFormError("이름은 20자 이내로 입력해주세요."); return; }
+    if (purpose.length > 40){ showFormError("사용 목적은 40자 이내로 입력해주세요."); return; }
+    if (!CONTACT_PATTERN.test(contact)){ showFormError("연락처는 숫자, -, 공백, 괄호만 입력해주세요."); return; }
+    if (contact.length > 20){ showFormError("연락처는 20자 이내로 입력해주세요."); return; }
+
+    // re-check immediately before writing to avoid overwriting a reservation
+    // made elsewhere while this modal was open
+    bookings = loadBookings();
+    if (bookings[state.pendingKey]){
+      closeModal();
+      render();
+      showToast("이미 다른 예약이 등록되었습니다. 화면을 갱신했습니다.");
+      return;
+    }
+
+    bookings[state.pendingKey] = {
+      name: name,
+      purpose: purpose,
+      contact: contact,
+      createdAt: new Date().toISOString()
+    };
+    saveBookings();
+    closeModal();
+    render();
+    showToast("예약이 완료되었습니다.");
+  });
+
+  function showFormError(msg){
+    formError.textContent = msg;
+    formError.classList.remove("hidden");
+  }
+
+  /* ---------- modal: detail / cancel ---------- */
+  var detailName = document.getElementById("detailName");
+  var detailPurpose = document.getElementById("detailPurpose");
+  var detailContact = document.getElementById("detailContact");
+  var detailCreatedAt = document.getElementById("detailCreatedAt");
+  var cancelConfirmText = document.getElementById("cancelConfirmText");
+  var requestCancelBtn = document.getElementById("requestCancelBtn");
+  var confirmCancelBtn = document.getElementById("confirmCancelBtn");
+  var abortCancelBtn = document.getElementById("abortCancelBtn");
+
+  function openDetailModal(key, booking, metaLabel){
+    state.pendingKey = key;
+    modalTitle.textContent = "예약 상세";
+    modalMeta.textContent = metaLabel;
+    detailName.textContent = booking.name;
+    detailPurpose.textContent = booking.purpose;
+    detailContact.textContent = booking.contact;
+    detailCreatedAt.textContent = formatCreatedAt(booking.createdAt);
+    reserveForm.classList.add("hidden");
+    detailView.classList.remove("hidden");
+    resetCancelConfirm();
+    overlay.classList.remove("hidden");
+  }
+
+  function formatCreatedAt(iso){
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return "-";
+    return d.getFullYear() + "." + pad2(d.getMonth()+1) + "." + pad2(d.getDate()) + " " +
+           pad2(d.getHours()) + ":" + pad2(d.getMinutes()) + " 등록";
+  }
+
+  function resetCancelConfirm(){
+    cancelConfirmText.classList.add("hidden");
+    requestCancelBtn.classList.remove("hidden");
+    confirmCancelBtn.classList.add("hidden");
+    abortCancelBtn.classList.add("hidden");
+  }
+
+  document.getElementById("closeDetailBtn").addEventListener("click", closeModal);
+
+  requestCancelBtn.addEventListener("click", function(){
+    cancelConfirmText.classList.remove("hidden");
+    requestCancelBtn.classList.add("hidden");
+    confirmCancelBtn.classList.remove("hidden");
+    abortCancelBtn.classList.remove("hidden");
+  });
+
+  abortCancelBtn.addEventListener("click", resetCancelConfirm);
+
+  confirmCancelBtn.addEventListener("click", function(){
+    bookings = loadBookings();
+    delete bookings[state.pendingKey];
+    saveBookings();
+    closeModal();
+    render();
+    showToast("예약이 취소되었습니다.");
+  });
+
+  /* ---------- toast ---------- */
+  var toastEl = document.getElementById("toast");
+  var toastTimer = null;
+  function showToast(msg){
+    toastEl.textContent = msg;
+    toastEl.classList.remove("hidden");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toastEl.classList.add("hidden"); }, 2600);
+  }
+
+  render();
+
+  // keep "지난 시간" / "곧 사용 예정" status current even without user interaction
+  setInterval(render, 60 * 1000);
+})();
+</script>
+</body>
+</html>
